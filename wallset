@@ -1,0 +1,12 @@
+#!/bin/bash
+
+OLDIFS=$IFS
+IFS='
+'
+DIREC=${1:-~/Pictures/}
+WALLS=($(find "$DIREC" -type f))
+LENGE="${#WALLS[@]}"
+ZUFAL="$(( ( RANDOM % $LENGE )  ))"
+
+fbsetbg -a "${WALLS[$ZUFAL]}"
+

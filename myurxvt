@@ -1,0 +1,2 @@
+#!/bin/bash
+urxvt -tr -tint white -sh 182 -e screen

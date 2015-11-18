@@ -1,0 +1,2 @@
+#!/bin/bash
+urxvt -tr -tint lightgreen -sh 35 -fg lightblue -fn "xft:Bitstream Vera Sans Mono:pixelsize=12" -e screen -c /home/keuch/.screenrc_moc mocp -T /home/keuch/.moc/themes/transparent_forlightbg 
