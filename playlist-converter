@@ -1,0 +1,37 @@
+#!/bin/bash
+
+if [[ "$1" == *[m3u,pls] ]]; then
+	echo $1 is a playlist
+else 
+	echo "usage: playlist-converter [playlist]
+		playlist should be m3u or pls format"
+	echo "this script will take a playlist, copy the actual files to a directory it creates within your home directory
+	      normalize the files to the same volume and create a playlist that points to the files within the new directory"
+	exit
+fi
+
+
+olddir=$(pwd)
+destdir=$(echo "$HOME/$(date +%N)")
+oldifs=$IFS
+IFS='
+'
+
+echo $destdir
+mkdir $destdir
+
+
+for i in $(cat $1 | grep -v ^# | sed 's:\r::'); do 
+cp $i "$destdir/${i##*/}"
+echo $i
+echo "${i##*/}" >> $destdir/playlist.m3u
+done
+
+/usr/bin/mp3gain -r $destdir/*mp3
+
+
+countr=1
+cd $destdir
+for i in $(cat playlist.m3u); do echo $i; eyeD3 --to-v2.4 --track=$countr $i; ((countr++)); done
+cd $olddir
+

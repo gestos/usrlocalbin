@@ -1,0 +1,8 @@
+#!/bin/bash
+OLDIFS=$IFS
+export IFS='
+'
+echo "$1" >> /mnt/data/mucke/shuffle.m3u
+xmessage -bg blue -fg red -timeout 3 -buttons "" "$1"
+IFS=$OLDIFS
+

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+ps -A | grep lastfmsubmit
+if [ $? = "0" ]; then
+	gxmessage -geometry 100x1 -borderless -timeout 1 -wrap -bg "#82041F" -fg "#FFA82E" -buttons , stopping lastfm
+	sudo /etc/init.d/lastfmsubmitd stop
+else 
+	gxmessage -geometry 100x1 -borderless -timeout 1 -wrap -bg "#Ffa82e" -fg "#82041f" -buttons , starting lastfm
+	sudo /etc/init.d/lastfmsubmitd start
+fi
+

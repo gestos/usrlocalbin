@@ -1,0 +1,6 @@
+#!/bin/bash
+
+
+echo $( date ) >> /var/log/ausfallog
+set -x
+grep -m1 "suspend failed"  <(tail -f -n0 --pid=$BASHPID /var/log/syslog) && /usr/local/bin/resq && echo "ausgefallen um $( date ), gerettet?" >> /var/log/ausfallog &&   exec /usr/local/bin/tgresq &

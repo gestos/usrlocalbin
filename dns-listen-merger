@@ -1,0 +1,53 @@
+#!/bin/bash
+
+## warn user of infile-changes, suggest backup
+read -n1 -p "this script will change the files in place. you might want to back up before. continue? [y/n]" answer
+echo
+if [ "$answer" != "y" ];
+	then 
+	echo "bye"
+	exit 0
+fi
+
+
+## set some variables
+lines1="$(cat "$1" | wc -l)"
+uniqe1="$(comm -32 <(sort -h $1) <(sort -h $2) | wc -l)"
+echo "$1" lines total:"$lines1" unique:"$uniqe1"
+
+lines2="$(cat "$2" | wc -l)"
+uniqe2="$(comm -31 <(sort -h $1) <(sort -h $2) | wc -l)"
+echo "$2" lines total:"$lines2" unique:"$uniqe2"
+
+
+## expect exactly 2 command line parameters via $# (number of arguments)
+if [ "$#" -ne 2 ];
+	then echo "$0 lässt sich nur mit exakt ZWEI Dateien aufrufen"
+	exit 1
+fi
+
+## grab lines unique to file1 and append them to file2
+echo
+echo "nur in $1 enthaltene Zeilen werden an $2 angehängt"
+comm -32 <(sort -h $1) <(sort -h $2) >> "$2"
+
+## same thing now just the other way round
+echo
+echo "nur in $2 enthaltene Zeilen werden an $1 angehängt"
+comm -31 <(sort -h $1) <(sort -h $2) >> "$1"
+
+## sort files in place and remove double lines as well
+echo
+echo "Beide Dateien werden sortiert und Dubletten entfernt"
+sort -u "$1" -o "$1"
+sort -u "$2" -o "$2"
+
+## now check if the files still differ?
+echo
+if [[ -z $(diff -q "$1" "$2") ]];
+	then echo "alles ok, files sind jetzt identisch"
+	echo "$1": $(cat "$1" | wc -l) lines
+	echo "$2": $(cat "$2" | wc -l) lines
+else
+	echo "files scheinen immer noch unterschiedlich zu sein"
+fi

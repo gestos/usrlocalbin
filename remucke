@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# hier einen defaultwert setzen, falls beim Aufruf kein Parameter übergeben wird:
+
+default=150
+
+
+sleep ${1-$default} 
+killall mocp
+

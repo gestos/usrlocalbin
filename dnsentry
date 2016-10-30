@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [[ -z "$1" ]]; then
+	echo "kein Argument angegeben -> Abbruch"
+	exit
+else
+
+echo address=/"$1"/127.0.0.1 >> /etc/dnsmasq.d/unsorted
+echo address=/"$1"/127.0.0.1 wurde hinzugefügt
+
+fi
+
+/etc/init.d/dnsmasq restart
+ps -A | grep dns

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+OLDIFS=$IFS
+
+IFS='
+'
+mocp -c
+mocp -a "$1"
+mocp -p
+
+IFS=$OLDIFS

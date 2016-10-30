@@ -1,0 +1,1 @@
+sed -e 's:>\([[:space:]].*facebook.com\).*$:\1:g' -e 's:^.*[[:blank:]].\(www.*\):\1:g' | grep ^www | uniq

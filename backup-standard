@@ -1,0 +1,114 @@
+#!/bin/bash
+
+
+##### Variablen definieren (hier sollten die zu kopierenden Ordner mal aus einem File eingelesen werden
+##### ACHTUNG die 'home' Variable in der Form wie hier, mit den exclude-Anweisungen voran (die von du und rsync akzeptiert werden)
+##### macht Probleme mit den Quotations. Da sich die excludes für alle subsequenten home/userx/ verzeichnis erstrecken sollen
+##### ist hier die wildcard angegeben. So wie es jetzt (nicht) gequotet ist, funktioniert es, aber das ist eher Zufall
+##### Variablen werden durch eine if-Schleife unterschiedlich belegt. Wenn $1=a dann soll automatisch durchgelaufen werden
+##### und keine Pfade mehr von Hand abgefragt o.ä.
+
+while getopts a pparam	    # \
+do			    #  \
+  case $pparam in	    #   check, ob das
+    a) autom='y'	    #   skript automatisch laufen soll
+  esac			    #  /
+done			    # /
+
+
+sync='rsync -ahvLR --progress'	# rsync optionen: a archive, h angabe in kb/mb/gb, v verbose, L symlinks to file/dir, R relative path names
+heute=$( date +%d_%m_%Y-%H_%M_%S )
+user_dir=$HOME
+box=$( uname -n )		# Rechner, auf dem gearbeitet wird
+cleaned_home='--exclude=.wine --exclude=.freeciv --exclude=.cache --exclude=.macromedia --exclude=.rvm --exclude=.opera /home/*/'
+ordner_include=( "$cleaned_home" /etc/ /boot/ /usr/local/ /mnt/data/docs/ /mnt/data/prsnl/ )	# verzeichnisse, die archiviert werden sollen
+
+prpl='\e[0;35m'	#magenta
+blau='\e[0;34m' #blau
+clrout='\e[0m'  #Ende des farbigen Bereichs
+
+##### Kurzer Lauf, um evtl. große Files wie isos und so zu finden
+##### nicht nötig bei automatischem Durchlauf. 
+
+if [[ "$autom" != "y" ]]; then	# nur bei manuellem Aufruf
+
+  clear
+
+  printf "als erstes kurz gucken, ob irgendwelche großen Files rumliegen, die nicht mitmüssen...\n"
+  printf "diese files sind groesser als 200MB.\n\n"
+  for i in "${ordner_include[@]}"
+	  do
+	  echo $i | grep -o "/.*"
+	  find $(echo "$i" | grep -o "/.*") -type f -size +150M -exec ls -lh {} \; 2>/dev/null
+	  done
+
+  printf "\nstandardmässig werden alle files kopiert\n"
+  printf "das Prog kann abgebrochen werden, und die files von hand gelöscht\n"
+  printf "Größe aller Ordner zusammen:\n" 
+  echo "$(du -shc ${ordner_include[@]} 2>/dev/null)"	# nb: durch die Form mit { [@]} werden die ordner zusammen an du übergeben
+  read -n1 -p "weiter? (y/n) " weiter
+  printf "\n"
+
+  if [[ "$weiter" != "y" ]]; then
+	  printf "\n"
+	  exit 0
+  fi
+
+fi
+##### Ordner, in den das Backup soll und ob ein neuer Ordner angelegt wird
+##### ! Hier noch Funktion einfügen, daß der name nicht automatisch aufs Datum gesetzt wird
+##### dadurch kann z.B. ein am Namen erkennbarer Ordner angelegt werden, der als dauerhaftes inkrementelles Backup genutzt werden kann
+## entweder neues backup anlegen, oder inkrementell in vorhandenen ordner saven:
+## bei Automatik wird einfach /mnt/00-backup/$(uname -n)
+
+
+
+if	[[ "$autom" != "y" ]]; then
+	read -e -n1 -p "inkrementelles backup (i) in vorhandenes verzeichnis schreiben, oder neuen ordner (n) anlegen?" inkr
+	if 
+			[[ "$inkr" == "i" ]]; then
+			read -e -p "vorhandenen basis-ordner (root) für inkr. backup wählen (= / ): " basisordner
+			backup_dir="$basisordner"
+			printf "\n"
+	elif 
+			[[ "$inkr" == "n" ]]; then
+			read -e -p "wo soll der neue ordner angelegt werden? " neuerordner
+			backup_dir="$neuerordner""$box"-"$heute"
+			printf "\n"
+	else	
+			printf "kein ordner gewählt, abbruch"
+			exit 0
+	fi
+elif	[[ "$autom" == "y" ]]; then
+		backup_dir="/mnt/00-backup/$box"
+		printf "\n"
+
+fi
+
+
+echo "es werden folgende Verzeichnisse kopiert:"
+for i in "${ordner_include[@]}"
+ do echo "$i"
+done
+
+
+if [[ "$autom" != "y" ]]; then								# nur bei manuellem Aufruf
+  read -e -n1 -p "Daten werden nach $backup_dir kopiert. Weiter? (y/n)" korrekt
+  if [[ "$korrekt" == "n" ]]; then
+	  exit 1
+  fi
+fi
+
+for i in "${ordner_include[@]}"
+	do $sync $i $backup_dir
+	done
+
+printf "\n"
+echo "schreibe timestamp nach "${backup_dir%/}"/last-update"
+echo "letztes update am $heute" > "${backup_dir%/}"/last-update
+
+cd $prefixpath
+
+
+######## TO-DO: Ordner-Abarbeitung bzw. ordnerliste als array anlegen
+########        Array aus File einlesen mit option, z.B. -f Ordnerliste.txt

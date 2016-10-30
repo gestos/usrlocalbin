@@ -1,0 +1,123 @@
+#!/bin/bash
+
+
+
+##########Funktionen, die filtern, ob die Zeile nur Zahlen oder auch Buchstaben enthält
+##########nur Zahlen werden an iptables übergeben, url-Wörter in dnsmasq geschrieben
+##### testlauf, der keine regeln schreibt, sondern nur auf stdout ausgibt
+
+masqfile=unsorted
+
+filterung_test () 	{
+	if [[ -z $(echo "$1" | egrep "[[:alpha:]]") ]]; then
+	
+#	iptables -A OUTPUT -d "$line" -j DROP &&
+	echo "iptables -A OUTPUT -d "$1" -j DROP"
+#	iptables -A INPUT -d "$line" -j DROP &&
+	echo "iptables -A INPUT -d "$1" -j DROP"
+	
+	else 
+#	echo "address=/"$line"/127.0.0.1" >> /etc/dnsmasq.d/unsorted &&
+	echo "address=/"$1"/127.0.0.1" 
+	
+
+	fi
+		}
+
+##### echter durchlauf, der in die Dateien schreibt
+filterung_real () 	{
+	if [[ -z $(echo "$1" | egrep "[[:alpha:]]") ]]; then
+	
+	iptables -A OUTPUT -d "$1" -j DROP &&
+	echo "iptables -A OUTPUT -d "$1" -j DROP"
+	iptables -A INPUT -d "$1" -j DROP &&
+	echo "iptables -A INPUT -d "$1" -j DROP"
+	
+	else 
+	echo "address=/"$1"/127.0.0.1" >> /etc/dnsmasq.d/"$masqfile" &&
+	echo "address=/"$1"/127.0.0.1" 
+	
+
+	fi
+		}
+########## Ende der Funktionsdaklaration #############
+#
+#
+#
+########## Bestimmung, ob der input aus einem file kommt oder gepiped wird ##########
+case "$(stat -L -c %t /dev/fd/0)" in
+0)
+  echo "Reading from pipe";    # Do whatever with pipe
+  inputtype=pipe ;
+  ;;
+88)
+  echo "Reading from file";   # Do whatever with arguments
+  inputtype=file ;
+  ;;
+*)
+  echo "sonstwas"
+  ;;
+esac
+
+##### gucken, ob trotzdem ein Argument mitgegeben wurde, ohne Argument wird standardmäßig nur getestet
+case "$inputtype" in
+pipe)
+	if [[ "$1" == "-t" ]]; then
+		echo "testlauf mit pipe-input"
+		filter=filterung_test
+	elif [[ "$1" == "-r" ]]; then
+		echo "reallauf mit pipe-input"
+		filter=filterung_real
+	elif [[ "$1" == "-rp" ]]; then
+		echo "reallauf mit pipe-input"
+		filter=filterung_real
+		masqfile=unsorted2
+	else 
+		echo "kein argument, als automatisch nur testlauf mit pipe-input"
+		filter=filterung_test
+	fi
+;;
+file)
+	if [[ "$1" == "-t" ]]; then
+		echo "testlauf mit file-input"
+		filter=filterung_test
+		shift	
+	elif [[ "$1" == "-r" ]]; then
+		echo "reallauf mit file-input"
+		filter=filterung_real
+		shift
+	elif [[ "$1" == "-rp" ]]; then
+		echo "reallauf mit file-input"
+		filter=filterung_real
+		masqfile=unsorted2
+		shift
+	elif [[ -z "$1" ]]; then
+		echo "bitte File angeben"
+		exit 1
+	else 
+		echo "kein argument, als automatisch nur testlauf mit file-input"
+		filter=filterung_test
+	fi
+;;
+esac
+
+
+##### je nachdem, ob die Daten aus einem file oder einer pipe kommen, werden sie entweder mit $1 übergeben oder mit read line
+if [[ "$inputtype" == "file"  ]]; then
+	echo "$(ls "$1")"
+	for i in $(cat "$1"); 	do
+		$filter "$i"
+				done
+	
+
+elif [[ "$inputtype" == "pipe" ]]; then
+	echo "pipe read"
+	while read line; 	do
+		$filter "$line"
+				done
+fi
+
+
+
+########## am Ende wird noch noch dnsmasq neu gestartet
+/etc/init.d/dnsmasq restart

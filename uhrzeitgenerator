@@ -1,0 +1,7 @@
+#!/bin/bash
+
+Monat=$(seq -w 01 12 | sort -R | head -n1)
+Tag=$(seq -w 01 28 | sort -R | head -n1)
+Stunde=$(seq -w 00 23 | sort -R | head -n1)
+Minute=$(seq -w 00 59 | sort -R | head -n1)
+echo "$Monat""$Tag""$Stunde""$Minute"

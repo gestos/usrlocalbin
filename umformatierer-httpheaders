@@ -1,0 +1,9 @@
+#!/bin/bash
+OLDIFS=$IFS
+IFS='
+'
+
+sed 's:<td class="rId:\n<td class="rId:g' $1 | grep -oP 'http[s]?://.*?/' $2 | grep -oP "\..*?\..*?$" | sed 's:.$::; s:^.::' | sort -u
+
+
+IFS=$OLDIFS

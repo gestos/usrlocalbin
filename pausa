@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ "$(mocp -Q %state)" = "STOP" ];
+	then	
+	mocp -p
+elif [ "$(mocp -Q %state)" = "PLAY" ];
+	then	
+	mocp -G
+elif [ "$(mocp -Q %state)" = "PAUSE" ];
+	then	
+	mocp -G
+fi

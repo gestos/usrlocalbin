@@ -1,0 +1,23 @@
+#!/bin/bash
+
+## File Separator to newline
+OLDIFS="$IFS"
+IFS=""
+
+if [[ "$#" -eq 0 ]]; then 
+	echo "$0 will translate any urls in a given file into a list suitable for appending to a dnsmasq-hostlist"
+	exit 0
+fi
+
+## actual translation
+
+for infile in "$@"
+do
+  if [[ ! -f $infile ]];
+	then
+	echo "$infile does not exist"
+  fi
+grep -oP "http://.*?/" $infile | sort -u | sed 's;http:/;address=;' | sed 's;/$;/127.0.0.1;'
+done > >(sort -u)
+## Files Separator back to old IFS
+IFS=$OLDIFS

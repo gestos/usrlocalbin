@@ -1,0 +1,2 @@
+#!/bin/bash
+	gxmessage -borderless -bg "#517ff2" -fg "#F94ffa" -buttons erledigt,nein anwalt laufen bewerbung

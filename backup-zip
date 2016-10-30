@@ -1,0 +1,81 @@
+#!/bin/bash
+# backup-zip
+
+while getopts abc pparam    #
+do			    #
+  case $pparam in	    #  check, ob das
+    a) autom='y'	    #  skript automatisch laufen soll
+  esac			    #
+done			    #
+
+### Variablen werden gesetzt
+
+datum="$(date +%Y-%m-%d_%H%M)"
+
+
+###### hier bitte der Basisordner, der komprimiert werden soll, den Zielort und das ggf. vorhandene Snapshot-File lesen
+## manuell
+   if [[ "$autom" != "y" ]]; then #Abfrage nur bei manuellem Aufruf
+	   read -e -p "Bitte die Basis für das zu erstellende Zipfile wählen:" basedir
+	   read -e -p "Bitte den Zielordner für das Zip-Komprimat angeben:" saveloc # hierhin soll die gepackte Datei kommen
+	   read -e -p "tar-snapshotfile:" snapfile # tar snapshots = Dateilisten, anhand derer inkrementell nur die Dateien kopiert und gepackt werden,
+						   # die neu dazugekommen sind
+   fi
+## automatik
+   if [[ "$autom" == "y" ]]; then
+	   basedir="$2"
+	   echo "$basedir"
+	   saveloc="$3"
+     if [ -e "${3%/}"/*.tarsnap ]; then
+	   snapfile="$( find "${3%/}/" -iname "*.tarsnap" )"
+	   echo "$snapfile"
+     fi
+   fi
+## trailing slash vereinheitlichen
+korrektz=$(echo ${basedir%/} | sed -n -e 's;^.*\/;;p') # den anhängenden slash entfernt
+
+## variable setzen, ob's schon einen snapshot gibt oder nicht
+if [ -e "$snapfile" ]; then
+	exist_snap='1'
+	echo "$snapfile"
+else 
+	exist_snap='0'
+fi
+
+
+## nur noch mal eine letzte Abfrage, ob alles so o.k. ist - nur bei manueller Ausführung
+if [[ "$autom" != "y" ]]; then 
+  echo "Name und Ort des komprimierten Outputs: " "$saveloc""$korrektz"-"$datum".bz2
+  read -e -n1 -p "korrekt so?(y/n)" weiter
+	if [[ "$weiter" != "y" ]]; then
+	 echo "aborting"
+	 exit 1
+	fi
+fi
+
+### hier folgt eine Routine, um (nicht) vorhandene snapfiles zu kopieren und wieder zu löschen
+### die gewünschte Vorgehensweise soll sein:
+### Eine einmal von null erstellte Basis-Zip-Datei, (Grandfather oder level 0) soll als Basis dienen, um bei weiteren Backups
+### nur die neueren (Schreibdatum? oder noch gar nicht vorhanden? klären) Dateien zu kopieren
+### tar macht bei seiner inkrementellen Funktion normalerweise das letzte inkrementelle Backup zur Basis weiterer inkrementeller Backups
+### ich möchte aber als Basis immer das Generation-Null-zip haben, so daß es jeweils immer nur ein weiteres "Zusatzfile" gibt, in dem
+### die Veränderungen zu Generation Null gespeichert sein werden. Rück-Entpacken erfordert dann nur diese zwei files
+### alle paar Wochen oder Monate soll dann wieder mit einem Generation-Null file von vorne angefangen werden.
+if I  [[ "$exist_snap" == "0" ]]; then
+  snapfile=""$saveloc""$korrektz".tarsnap"			# wenn es noch kein snapfile gibt, wird eins mit dem Namen des Basis-Ordners erstellt
+								# sorgt auch gleichzeitig dafür, daß, wenn das file doch vorhanden ist, es benutzt wird
+  tar --listed-incremental=$snapfile -cvjf "$saveloc""$korrektz"-"$datum".bz2 "$basedir"
+
+elif  [[ "$exist_snap" == "1" ]]; then					# wenn schon eins vorhanden:
+  cp "$snapfile" "$snapfile".old					# wird es unter anderem Namen gesichert/kopiert
+									# snapfile=""$saveloc""$korrektz"-"$datum".tarsnap"
+	    if [ -e "${saveloc%/}"/*.incr.bz2 ]; then			# eventuell vorhandene inkremente (erkennbar am "incr"
+		rm "$saveloc"*.incr.bz2					# werden gelöscht, denn wir wollen ja immer die Differenz zum Großvater!
+	    fi
+  tar --listed-incremental=$snapfile -cvjf "$saveloc""$korrektz"-"$datum".incr.bz2 "$basedir" # und ein aktuelles Inkrement mit Endung incr.bz2 angelegt
+  mv "$snapfile".old "$snapfile"					# weil tar das snapfile immer überschreibt, wird das alte als Basis zurückkopiert
+fi
+
+## Das snapfile bleibt immer (auch wenn im Namen das Datum des letzten Backup enthalten ist
+## dasjenige, das sich auf das Ur-Backup mit der Endung $Datum.bz2 bezieht
+## Alte Inkremente werden gelöscht, es wird immer die Differenz zum Ur-Backup erfasst!

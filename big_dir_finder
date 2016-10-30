@@ -1,0 +1,5 @@
+OLDIFS=$IFS
+IFS='
+'
+for i in $(du --max-depth=1 -k ${1-./} | sort -nr | cut -f2); do du -hs "$i"; done
+IFS=$OLDIFS

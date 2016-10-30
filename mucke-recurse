@@ -1,0 +1,43 @@
+#!/bin/bash
+
+OLDIFS=$IFS
+IFS='
+'
+
+bearbeiten="$1"
+
+if [ -z $1 ];
+	then echo "no argument given, assuming current directory"
+	bearbeiten=$( pwd )
+fi
+
+
+
+for i in $( find $bearbeiten -type f -name "*[A-Z]*" ); do 
+	fil=$( echo $i | sed s:.*/::g ); 
+	dri=${i%\/*};
+	lowa=$( echo $fil | tr [:upper:] [:lower:] );
+
+	echo "moving $dri/$fil to $dri/$lowa"; 
+	mv "$dri/$fil" "$dri/$lowa"; 
+	
+done
+
+
+for i in $( find $bearbeiten -depth -type d -name "*[A-Z]*" ); do 
+	fil=$( echo $i | sed s:.*/::g ); 
+	dri=${i%\/*};
+	lowa=$( echo $fil | tr [:upper:] [:lower:] );
+
+	echo "moving $dri/$fil to $dri/$lowa"; 
+	mv "$dri/$fil" "$dri/$lowa"; 
+	
+done
+
+for i in $( find $bearbeiten -depth -type d -name "*[A-Z]*" ); do 
+	lowa=$( echo $i | tr [:upper:] [:lower:] );
+
+	echo "moving $i/ to $lowa"; 
+	mv "$i" "$lowa"; 
+	
+done

@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# dieses skript kopiert das in fluxbox angegebene letzte wallpaper vorab in den anmeldebildschirm von slim
+# gibt einen super einheitlichen look des ganzen
+
+if $( test -f /usr/share/slim/themes/keuch_custom/back* ) ;
+then
+rm /usr/share/slim/themes/keuch_custom/back*
+fi
+
+egrep -i -q "jpg|png" /home/keuch/.fluxbox/lastwallpaper
+if [ $? -ne 0 ] ;
+then
+echo "kein letztes wallpaper, setze von Hand"
+/usr/local/bin/wallfind > /home/keuch/.fluxbox/lastwallpaper
+chown keuch:keuch /home/keuch/.fluxbox/lastwallpaper
+else 
+echo "letztes wall gefunden"
+fi
+
+tail -n1 /home/keuch/.fluxbox/lastwallpaper > /home/keuch/.fluxbox/lastwallpaper_temp
+mv /home/keuch/.fluxbox/lastwallpaper_temp /home/keuch/.fluxbox/lastwallpaper
+hgbild=$( sed -e 's:\$full \$full|::g' -e 's:\(......\)$::g' /home/keuch/.fluxbox/lastwallpaper )
+hgbild_ext=$( echo $hgbild | sed 's:[^*\.]*::1' | tr [:upper:] [:lower:] )
+
+echo $hgbild
+echo $hgbild_ext
+
+cp $hgbild /usr/share/slim/themes/keuch_custom/background$hgbild_ext
+# rm /home/keuch/.fluxbox/lastwallpaper_temp
+
